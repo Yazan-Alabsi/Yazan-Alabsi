@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دفتر حساباتي الاحترافي</title>
+    <style>
+        :root { --primary: #2c3e50; --success: #27ae60; --danger: #e74c3c; --bg: #f8f9fa; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); margin: 0; padding: 15px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+        h2 { text-align: center; color: var(--primary); margin-bottom: 5px; }
+        .balance-card { background: var(--primary); color: white; padding: 20px; border-radius: 12px; text-align: center; margin: 20px 0; }
+        .balance-amount { font-size: 32px; font-weight: bold; }
+        .input-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        input, select, button { padding: 12px; border-radius: 8px; border: 1px solid #ddd; outline: none; font-size: 16px; }
+        button { background: var(--success); color: white; border: none; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        button:hover { opacity: 0.9; }
+        .history { margin-top: 30px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #eee; padding: 10px; text-align: right; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+        .inc { color: var(--success); font-weight: bold; }
+        .exp { color: var(--danger); font-weight: bold; }
+        .delete-btn { color: #999; cursor: pointer; border: none; background: none; font-size: 18px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>دفتر الحسابات الرقمي</h2>
+    <p style="text-align: center; color: #7f8c8d; font-size: 14px;">سجل مصاريفك ووارداك بكل سهولة</p>
+    
+    <div class="balance-card">
+        <div>إجمالي الرصيد المتوفر</div>
+        <div class="balance-amount" id="totalBalance">0.00</div>
+    </div>
+
+    <div class="input-group">
+        <input type="number" id="amount" placeholder="المبلغ (مثلاً: 500)">
+        <input type="text" id="desc" placeholder="بيان العملية (مثلاً: قطع غيار)">
+        <select id="type">
+            <option value="income">وارد (+)</option>
+            <option value="expense">منصرف (-)</option>
+        </select>
+        <button onclick="addTransaction()">إضافة العملية للدفتر</button>
+    </div>
+
+    <div class="history">
+        <h3>آخر العمليات</h3>
+        <table id="transactionTable">
+            <thead>
+                <tr>
+                    <th>البيان</th>
+                    <th>المبلغ</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    // جلب البيانات المخزنة مسبقاً في متصفح الهاتف
+    let transactions = JSON.parse(localStorage.getItem('my_ledger')) || [];
+
+    function updateUI() {
+        const tbody = document.getElementById('tbody');
+        const balanceDisplay = document.getElementById('totalBalance');
+        tbody.innerHTML = '';
+        let total = 0;
+
+        transactions.forEach((t, index) => {
+            const row = tbody.insertRow();
+            const isInc = t.type === 'income';
+            total += isInc ? t.amount : -t.amount;
+
+            row.innerHTML = `
+                <td>${t.desc}<br><small style="color:#aaa">${t.date}</small></td>
+                <td class="${isInc ? 'inc' : 'exp'}">${isInc ? '+' : '-'}${t.amount.toLocaleString()}</td>
+                <td><button class="delete-btn" onclick="deleteItem(${index})">✕</button></td>
+            `;
+        });
+
+        balanceDisplay.innerText = total.toLocaleString();
+        // حفظ البيانات في ذاكرة المتصفح المحلية
+        localStorage.setItem('my_ledger', JSON.stringify(transactions));
+    }
+
+    function addTransaction() {
+        const amountInput = document.getElementById('amount');
+        const descInput = document.getElementById('desc');
+        const amount = parseFloat(amountInput.value);
+        const desc = descInput.value;
+        const type = document.getElementById('type').value;
+
+        if (!amount || !desc) {
+            alert("لطفاً أدخل المبلغ والبيان");
+            return;
+        }
+
+        // إضافة العملية الجديدة في بداية القائمة
+        transactions.unshift({
+            amount, 
+            desc, 
+            type, 
+            date: new Date().toLocaleDateString('ar-YE')
+        });
+
+        amountInput.value = '';
+        descInput.value = '';
+        updateUI();
+    }
+
+    function deleteItem(index) {
+        if(confirm('هل تريد حذف هذه العملية؟')) {
+            transactions.splice(index, 1);
+            updateUI();
+        }
+    }
+
+    // تشغيل التحديث الأول عند فتح الصفحة
+    updateUI();
+</script>
+</body>
+</html>
